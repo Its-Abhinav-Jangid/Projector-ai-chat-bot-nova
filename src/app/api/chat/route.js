@@ -46,7 +46,6 @@ async function checkRateLimit(req) {
 }
 
 export async function POST(request) {
-  console.log(process.env.UPSTASH_REDIS_REST_URL);
   const limit = await checkRateLimit(request);
 
   if (!limit.allowed) {
@@ -57,7 +56,6 @@ export async function POST(request) {
   }
 
   const payload = await request.json();
-  console.log(payload);
 
   if (!payload.messages) {
     return NextResponse.json(
