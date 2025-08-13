@@ -1,4 +1,5 @@
-// pages/index.js - Projector-friendly AI Chatbot UI
+"use client";
+import RcMascot from "@/components/Greeting";
 import React, { useState, useEffect, useRef } from "react";
 import {
   FiSend,
@@ -7,30 +8,34 @@ import {
   FiToggleLeft,
   FiToggleRight,
 } from "react-icons/fi";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function ChatbotDemo() {
   const [messages, setMessages] = useState([]);
+  const messagesRef = useRef([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [demoMode, setDemoMode] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Demo responses for offline mode
   const demoResponses = [
-    "Hello! I'm your AI assistant. I'm here to help with questions about programming, science, math, or just about anything else you'd like to discuss!",
-    "That's a great question! Let me think about that for a moment and provide you with a detailed explanation.",
-    "I understand what you're asking. Here's how I would approach this problem step by step...",
-    "That's an interesting perspective! From my understanding, there are several factors to consider here.",
-    "Excellent point! This relates to some fundamental concepts that are worth exploring further.",
-    "I'd be happy to help you with that! Let me break this down into simpler parts.",
-    "That's a complex topic with many nuances. Here's what I think would be most helpful to know...",
+    "Hello! I'm Nova, your pit-crew AI 🏎️. Ask me anything about remote-controlled cars and I’ll race to answer!",
+    "Vroom vroom! 🚗 That’s a great question — let me steer you through the answer.",
+    "Alright, let’s pop the hood and break this down into simple steps.",
+    "Nice! I’ve got a cool fact about RC cars that will turbocharge your knowledge.",
+    "Fantastic question! This reminds me of how speed, control, and design all work together in an RC car.",
+    "Sure thing! Let’s make this as easy as tuning up your RC car before a race 🛠️.",
+    "Ooh, that’s a tricky corner — but I know how to handle the curves! Here’s my explanation...",
   ];
 
   // Example prompts for teachers to demonstrate
   const examplePrompts = [
-    "Explain how machine learning works in simple terms",
-    "What are the main differences between Python and JavaScript?",
-    "How does photosynthesis convert sunlight into energy?",
+    "List 3 secret tricks to make an RC car faster.",
+    "Explain how a remote-controlled car receives signals from the controller",
+    "Explain how RC cars turn without a steering wheel.",
+    "Describe the parts inside a remote-controlled car and what they do",
   ];
 
   // Auto-scroll to bottom when new messages arrive
@@ -46,14 +51,18 @@ export default function ChatbotDemo() {
   useEffect(() => {
     const greeting = {
       id: 1,
-      text: "Hello! 👋 I'm Claude, your AI assistant. I'm ready to help you learn and explore ideas together. What would you like to talk about today?",
-      sender: "bot",
+      content:
+        "🏎️ I'm Nova, your pit-crew AI assistant. I'm here to share tips, facts, and fun ideas about remote-controlled cars. What RC adventure should we start with today?",
+      role: "assistant",
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       }),
     };
-    setMessages([greeting]);
+    setTimeout(() => {
+      setMessages([greeting]);
+      messagesRef.current = [greeting];
+    }, 8000);
   }, []);
 
   // Handle sending messages
@@ -62,8 +71,8 @@ export default function ChatbotDemo() {
 
     const userMessage = {
       id: Date.now(),
-      text: input,
-      sender: "user",
+      content: input,
+      role: "user",
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -71,6 +80,7 @@ export default function ChatbotDemo() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    messagesRef.current = [...messagesRef.current, userMessage];
     setInput("");
     setIsTyping(true);
 
@@ -82,14 +92,15 @@ export default function ChatbotDemo() {
           demoResponses[Math.floor(Math.random() * demoResponses.length)];
         const botMessage = {
           id: Date.now() + 1,
-          text: randomResponse,
-          sender: "bot",
+          content: randomResponse,
+          role: "assistant",
           timestamp: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
         };
         setMessages((prev) => [...prev, botMessage]);
+        messagesRef.current = [...messagesRef.current, botMessage];
         setIsTyping(false);
       }, 1500 + Math.random() * 1000); // Random delay 1.5-2.5s
     } else {
@@ -98,20 +109,22 @@ export default function ChatbotDemo() {
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: input }),
+          body: JSON.stringify({ messages: messagesRef.current }),
         });
         const data = await response.json();
+        console.log(data);
 
         const botMessage = {
           id: Date.now() + 1,
-          text: data.response,
-          sender: "bot",
+          content: data.content,
+          role: "assistant",
           timestamp: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
         };
         setMessages((prev) => [...prev, botMessage]);
+        messagesRef.current = [...messagesRef.current, botMessage];
         setIsTyping(false);
       } catch (error) {
         console.error("Error calling API:", error);
@@ -157,6 +170,10 @@ export default function ChatbotDemo() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 flex flex-col">
+      <RcMascot
+        demoAnimation={true}
+        greetingText="Ready to race into learning!"
+      />
       {/* Header */}
       <header className="bg-black/20 backdrop-blur-sm border-b border-white/10 p-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -166,7 +183,7 @@ export default function ChatbotDemo() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Claude AI Assistant
+                Nova AI Assistant
               </h1>
               <p className="text-blue-200 text-lg">
                 Intelligent Conversation Partner
@@ -216,10 +233,10 @@ export default function ChatbotDemo() {
             <div
               key={message.id}
               className={`flex items-start space-x-4 animate-fade-in ${
-                message.sender === "user" ? "justify-end" : "justify-start"
+                message.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              {message.sender === "bot" && (
+              {message.role === "assistant" && (
                 <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <FiCpu className="text-white text-xl" />
                 </div>
@@ -227,28 +244,82 @@ export default function ChatbotDemo() {
 
               <div
                 className={`max-w-3xl ${
-                  message.sender === "user" ? "order-1" : ""
+                  message.role === "user" ? "order-1" : ""
                 }`}
               >
                 <div
                   className={`p-5 rounded-2xl shadow-lg backdrop-blur-sm border text-lg leading-relaxed ${
-                    message.sender === "user"
+                    message.role === "user"
                       ? "bg-blue-500/80 text-white border-blue-400/30 rounded-br-md"
                       : "bg-indigo-800/60 text-white border-indigo-600/30 rounded-bl-md"
                   }`}
                 >
-                  {message.text}
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ node, inline, className, children, ...props }) {
+                        return <span {...props}>{children}</span>;
+                      },
+                      pre({ node, children, ...props }) {
+                        return <div {...props}>{children}</div>;
+                      },
+                      table({ children }) {
+                        return (
+                          <div className="overflow-x-auto shadow-md rounded-lg mb-4">
+                            <table className="min-w-full divide-y divide-gray-700">
+                              {children}
+                            </table>
+                          </div>
+                        );
+                      },
+                      thead({ children }) {
+                        return (
+                          <thead className="bg-gray-800">{children}</thead>
+                        );
+                      },
+                      tbody({ children }) {
+                        return (
+                          <tbody className="divide-y divide-gray-700">
+                            {children}
+                          </tbody>
+                        );
+                      },
+                      tr({ children }) {
+                        return (
+                          <tr className="hover:bg-gray-800/50 transition-colors">
+                            {children}
+                          </tr>
+                        );
+                      },
+                      th({ children }) {
+                        return (
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            {children}
+                          </th>
+                        );
+                      },
+                      td({ children }) {
+                        return (
+                          <td className="px-4 py-3 text-sm text-gray-300 whitespace-nowrap">
+                            {children}
+                          </td>
+                        );
+                      },
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
                 <p
                   className={`text-sm text-blue-200 mt-2 ${
-                    message.sender === "user" ? "text-right" : "text-left"
+                    message.role === "user" ? "text-right" : "text-left"
                   }`}
                 >
                   {message.timestamp}
                 </p>
               </div>
 
-              {message.sender === "user" && (
+              {message.role === "user" && (
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0 order-2">
                   <FiUser className="text-white text-xl" />
                 </div>
@@ -295,8 +366,8 @@ export default function ChatbotDemo() {
           </div>
           <p className="text-blue-200 text-sm mt-2 text-center">
             {demoMode
-              ? "Demo Mode Active - Using Canned Responses"
-              : "API Mode - Using Mock Backend"}
+              ? "Demo Mode Active - Using saved Responses"
+              : "API Mode - Using Real Backend"}
           </p>
         </div>
       </div>
@@ -305,7 +376,7 @@ export default function ChatbotDemo() {
         @keyframes fade-in {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(100px);
           }
           to {
             opacity: 1;
